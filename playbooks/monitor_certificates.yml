@@ -3,6 +3,9 @@
   hosts: localhost
   gather_facts: false
   vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault token"
+      private: true
     - name: slack_webhook_url
       prompt: "Enter Slack webhook URL"
       private: true
@@ -17,34 +20,44 @@
       private: true
 
   tasks:
-    - name: Query Splunk for expiring certificates
+    - name: Include certificate monitoring role
+      include_role:
+        name: certificate_monitor
+
+    - name: Query Splunk for additional certificate information
       community.general.splunk_search:
         url: "{{ splunk_url }}"
         username: "{{ splunk_username }}"
         password: "{{ splunk_password }}"
         search: "{{ splunk_search }}"
       register: splunk_results
+      when: splunk_url is defined
 
-    - name: Process expiring certificates
+    - name: Process Splunk results
       set_fact:
-        expiring_certs: "{{ splunk_results.results | map(attribute='cert_name') | list }}"
+        splunk_expiring_certs: "{{ splunk_results.results | map(attribute='cert_name') | list }}"
       when: splunk_results.results | length > 0
+
+    - name: Combine certificate expiration data
+      set_fact:
+        all_expiring_certs: "{{ expiring_certs | default([]) + splunk_expiring_certs | default([]) | unique }}"
+      when: splunk_expiring_certs is defined
 
     - name: Send Slack notification for expiring certificates
       include_tasks: ../roles/notification/tasks/slack.yml
       vars:
-        message: "The following certificates will expire in {{ cert_expiry_threshold_days }} days: {{ expiring_certs | join(', ') }}"
+        message: "The following certificates will expire in {{ cert_expiry_threshold_days }} days: {{ all_expiring_certs | join(', ') }}"
         channel: "{{ notification_channel }}"
         color: "warning"
       when: 
-        - expiring_certs | length > 0
+        - all_expiring_certs | length > 0
         - notification_method in ["slack", "both"]
 
     - name: Send email notification for expiring certificates
       include_tasks: ../roles/notification/tasks/email.yml
       vars:
-        message: "The following certificates will expire in {{ cert_expiry_threshold_days }} days:\n\n{{ expiring_certs | join('\n') }}"
+        message: "The following certificates will expire in {{ cert_expiry_threshold_days }} days:\n\n{{ all_expiring_certs | join('\n') }}"
         subject: "Certificate Expiration Alert - {{ cert_expiry_threshold_days }} days remaining"
       when: 
-        - expiring_certs | length > 0
+        - all_expiring_certs | length > 0
         - notification_method in ["email", "both"] 

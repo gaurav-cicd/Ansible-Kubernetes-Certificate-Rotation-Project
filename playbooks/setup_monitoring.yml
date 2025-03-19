@@ -1,0 +1,67 @@
+---
+- name: Setup Certificate Monitoring
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Create log directory
+      file:
+        path: /var/log
+        state: directory
+        mode: '0755'
+
+    - name: Create log file
+      file:
+        path: /var/log/cert-monitor.log
+        state: touch
+        mode: '0644'
+
+    - name: Copy monitoring script
+      copy:
+        src: ../monitor_certificates.sh
+        dest: /usr/local/bin/monitor_certificates.sh
+        mode: '0755'
+
+    - name: Copy systemd service file
+      copy:
+        src: ../ansible-cert-monitor.service
+        dest: /etc/systemd/system/ansible-cert-monitor.service
+        mode: '0644'
+
+    - name: Create systemd timer file
+      copy:
+        content: |
+          [Unit]
+          Description=Kubernetes Certificate Monitor Timer
+
+          [Timer]
+          OnBootSec=1min
+          OnUnitActiveSec=5min
+          Unit=ansible-cert-monitor.service
+
+          [Install]
+          WantedBy=timers.target
+        dest: /etc/systemd/system/ansible-cert-monitor.timer
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start monitoring service
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - ansible-cert-monitor.service
+        - ansible-cert-monitor.timer
+
+    - name: Verify monitoring service status
+      systemd:
+        name: ansible-cert-monitor.timer
+        state: started
+      register: timer_status
+
+    - name: Display monitoring service status
+      debug:
+        msg: "Certificate monitoring service is {{ 'running' if timer_status.status.ActiveState == 'active' else 'not running' }}" 
