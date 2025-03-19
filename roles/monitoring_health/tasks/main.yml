@@ -1,0 +1,98 @@
+---
+- name: Check monitoring service status
+  systemd:
+    name: ansible-cert-monitor.service
+    state: started
+  register: service_status
+
+- name: Check monitoring timer status
+  systemd:
+    name: ansible-cert-monitor.timer
+    state: started
+  register: timer_status
+
+- name: Check log file for errors
+  command: tail -n 100 /var/log/cert-monitor.log
+  register: log_check
+  changed_when: false
+
+- name: Check if log contains error messages
+  set_fact:
+    has_errors: "{{ log_check.stdout | regex_search('Error|Failed|Exception|error|failed|exception') is not none }}"
+  when: log_check.stdout is defined
+
+- name: Check last execution time
+  command: systemctl show ansible-cert-monitor.service -p ExecMainStartTimestamp
+  register: last_execution
+  changed_when: false
+
+- name: Calculate time since last execution
+  set_fact:
+    last_execution_time: "{{ last_execution.stdout | regex_replace('ExecMainStartTimestamp=', '') }}"
+  when: last_execution.stdout is defined
+
+- name: Check if service is running too long
+  set_fact:
+    is_running_too_long: "{{ (ansible_date_time.epoch | int) - (last_execution_time | to_datetime('%Y-%m-%d %H:%M:%S %Z') | to_unix) > 300 }}"
+  when: last_execution_time is defined
+
+- name: Send failure notifications
+  block:
+    - name: Send Slack notification for monitoring failure
+      include_tasks: ../notification/tasks/slack.yml
+      vars:
+        message: |
+          :warning: *Certificate Monitoring System Alert*
+          
+          The monitoring system has encountered issues:
+          {% if not service_status.status.ActiveState == 'active' %}
+          - Service is not running
+          {% endif %}
+          {% if not timer_status.status.ActiveState == 'active' %}
+          - Timer is not active
+          {% endif %}
+          {% if has_errors %}
+          - Recent errors detected in logs
+          {% endif %}
+          {% if is_running_too_long %}
+          - Service has been running for more than 5 minutes
+          {% endif %}
+          
+          Please check the monitoring system at your earliest convenience.
+        channel: "{{ notification_channel }}"
+        color: "danger"
+      when: 
+        - notification_method in ["slack", "both"]
+        - (not service_status.status.ActiveState == 'active' or 
+           not timer_status.status.ActiveState == 'active' or 
+           has_errors or 
+           is_running_too_long)
+
+    - name: Send email notification for monitoring failure
+      include_tasks: ../notification/tasks/email.yml
+      vars:
+        message: |
+          Certificate Monitoring System Alert
+          
+          The monitoring system has encountered issues:
+          {% if not service_status.status.ActiveState == 'active' %}
+          - Service is not running
+          {% endif %}
+          {% if not timer_status.status.ActiveState == 'active' %}
+          - Timer is not active
+          {% endif %}
+          {% if has_errors %}
+          - Recent errors detected in logs
+          {% endif %}
+          {% if is_running_too_long %}
+          - Service has been running for more than 5 minutes
+          {% endif %}
+          
+          Please check the monitoring system at your earliest convenience.
+        subject: "Certificate Monitoring System Alert - Service Issues Detected"
+      when: 
+        - notification_method in ["email", "both"]
+        - (not service_status.status.ActiveState == 'active' or 
+           not timer_status.status.ActiveState == 'active' or 
+           has_errors or 
+           is_running_too_long) 

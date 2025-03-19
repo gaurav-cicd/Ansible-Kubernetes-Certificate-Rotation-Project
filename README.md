@@ -210,6 +210,54 @@ The monitoring system includes:
    - Splunk integration for additional monitoring and historical data
    - Combined results for comprehensive certificate status
 
+5. **Health Monitoring**:
+   - Continuous monitoring of the monitoring system itself
+   - Checks for:
+     - Service status
+     - Timer status
+     - Recent errors in logs
+     - Service execution duration
+   - Automatic notifications for:
+     - Service failures
+     - Timer issues
+     - Error detection
+     - Long-running processes
+   - Health checks run every 5 minutes
+   - Notifications via Slack and/or email
+
+### Health Check Notifications
+
+The system will send notifications in the following scenarios:
+
+1. **Service Status Issues**:
+   - Service not running
+   - Timer not active
+   - Service running too long (>5 minutes)
+
+2. **Error Detection**:
+   - Recent errors in logs
+   - Failed health checks
+   - Monitoring system failures
+
+3. **Notification Format**:
+   - Detailed error messages
+   - Specific issues identified
+   - Timestamp of the problem
+   - Recommended actions
+
+### Manual Health Check
+
+You can manually check the monitoring system health:
+```bash
+ansible-playbook playbooks/check_monitoring_health.yml
+```
+
+This will:
+- Check service and timer status
+- Review recent logs for errors
+- Verify execution times
+- Send notifications if issues are found
+
 ## Security Considerations
 
 - All sensitive credentials are stored in Hashicorp Vault

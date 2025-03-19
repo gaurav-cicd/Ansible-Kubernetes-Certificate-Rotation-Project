@@ -1,0 +1,22 @@
+---
+- name: Check Monitoring System Health
+  hosts: localhost
+  gather_facts: true
+  vars_prompt:
+    - name: slack_webhook_url
+      prompt: "Enter Slack webhook URL"
+      private: true
+    - name: email_recipients
+      prompt: "Enter email recipients (comma-separated)"
+      private: false
+    - name: smtp_username
+      prompt: "Enter SMTP username"
+      private: true
+    - name: smtp_password
+      prompt: "Enter SMTP password"
+      private: true
+
+  tasks:
+    - name: Include monitoring health check role
+      include_role:
+        name: monitoring_health 
