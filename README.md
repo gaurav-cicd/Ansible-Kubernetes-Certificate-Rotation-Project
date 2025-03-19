@@ -258,10 +258,58 @@ This will:
 - Verify execution times
 - Send notifications if issues are found
 
-## Security Considerations
+## Security Guidelines
 
-- All sensitive credentials are stored in Hashicorp Vault
-- Certificate rotation is performed with minimal downtime
-- Audit logging of all certificate operations
-- Secure handling of monitoring service credentials
-- Proper file permissions for logs and scripts
+### Sensitive Data Handling
+
+This project contains sensitive information that should be handled carefully:
+
+1. **Never commit sensitive data**:
+   - Vault tokens
+   - Slack webhook URLs
+   - SMTP credentials
+   - Splunk credentials
+   - Kubernetes cluster credentials
+   - Private keys and certificates
+
+2. **Use template files**:
+   - Copy `group_vars/all.yml.template` to `group_vars/all.yml`
+   - Update with your specific values
+   - Never commit the actual `all.yml` file
+
+3. **Credential Storage**:
+   - Store sensitive credentials in Hashicorp Vault
+   - Use environment variables for local development
+   - Never hardcode credentials in playbooks
+
+4. **File Permissions**:
+   - Set appropriate permissions for credential files
+   - Restrict access to log files
+   - Use secure file ownership
+
+5. **Network Security**:
+   - Use HTTPS for all API communications
+   - Implement proper firewall rules
+   - Use secure ports for services
+
+### Best Practices
+
+1. **Version Control**:
+   - Use `.gitignore` to exclude sensitive files
+   - Never commit real certificates or keys
+   - Use template files for configuration
+
+2. **Access Control**:
+   - Implement role-based access control
+   - Use service accounts with minimal privileges
+   - Regular audit of access permissions
+
+3. **Monitoring**:
+   - Enable audit logging
+   - Monitor access to sensitive files
+   - Regular security reviews
+
+4. **Updates**:
+   - Keep all dependencies updated
+   - Regular security patches
+   - Review security advisories

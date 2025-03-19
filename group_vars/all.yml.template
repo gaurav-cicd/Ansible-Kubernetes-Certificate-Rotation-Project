@@ -1,0 +1,45 @@
+---
+# Vault Configuration
+vault_url: "https://vault.example.com"
+vault_token: "{{ vault_token }}"  # Set this in vault_token file
+vault_path: "secret/kubernetes/certificates"
+
+# Kubernetes Configuration
+k8s_context: "default"
+k8s_namespace: "default"
+k8s_cert_path: "/etc/kubernetes/pki"
+
+# Certificate Configuration
+cert_expiry_threshold_days: 5
+cert_types:
+  - name: "apiserver"
+    path: "apiserver.crt"
+  - name: "apiserver-kubelet-client"
+    path: "apiserver-kubelet-client.crt"
+  - name: "front-proxy-client"
+    path: "front-proxy-client.crt"
+  - name: "etcd-server"
+    path: "etcd/server.crt"
+  - name: "etcd-healthcheck-client"
+    path: "etcd/healthcheck-client.crt"
+
+# Notification Configuration
+notification_method: "both"  # Options: "slack", "email", or "both"
+slack_webhook_url: "{{ slack_webhook_url }}"  # Set this in slack_webhook_url file
+notification_channel: "#certificate-alerts"
+team_notification_channel: "#certificate-rotation"
+
+# Email Configuration
+email_recipients: "{{ email_recipients }}"  # Set this in email_recipients file
+email_from: "cert-rotation@example.com"
+smtp_host: "smtp.example.com"
+smtp_port: 587
+smtp_username: "{{ smtp_username }}"  # Set this in smtp_credentials file
+smtp_password: "{{ smtp_password }}"  # Set this in smtp_credentials file
+smtp_secure: "starttls"
+
+# Splunk Configuration
+splunk_url: "https://splunk.example.com"
+splunk_username: "{{ splunk_username }}"  # Set this in splunk_credentials file
+splunk_password: "{{ splunk_password }}"  # Set this in splunk_credentials file
+splunk_search: "search index=certificates earliest=-1d | where expiry_days <= {{ cert_expiry_threshold_days }}" 
