@@ -11,6 +11,42 @@ This Ansible project automates the process of rotating Kubernetes certificates t
 - Splunk monitoring setup
 - Systemd-based Linux system (for automatic monitoring)
 
+## Monitoring Server Requirements
+
+The monitoring system should be deployed on a dedicated server with the following specifications:
+
+### Hardware Requirements
+- Minimum 2 CPU cores
+- 4GB RAM
+- 20GB storage
+
+### Software Requirements
+- Linux distribution with systemd (Ubuntu 20.04 LTS or RHEL 8+ recommended)
+- Python 3.8 or higher
+- Ansible 2.9 or higher
+- OpenSSL
+- Network connectivity to:
+  - Hashicorp Vault
+  - Kubernetes cluster
+  - Splunk
+  - Slack API
+  - SMTP server (if using email notifications)
+
+### Network Requirements
+- Outbound access to:
+  - Hashicorp Vault (default: 8200)
+  - Kubernetes API (default: 6443)
+  - Splunk (default: 8089)
+  - Slack API (443)
+  - SMTP server (if using email notifications)
+- Firewall rules to allow these connections
+
+### Security Requirements
+- Secure storage for credentials
+- Regular security updates
+- Network isolation (recommended)
+- Access control for monitoring server
+
 ## Project Structure
 
 ```
@@ -35,6 +71,41 @@ This Ansible project automates the process of rotating Kubernetes certificates t
 ├── monitor_certificates.sh
 ├── ansible-cert-monitor.service
 └── requirements.yml
+```
+
+## Deployment
+
+1. Choose a suitable monitoring server that meets the requirements above.
+
+2. Clone the repository to the monitoring server:
+```bash
+git clone <repository-url>
+cd kubernetes-cert-rotation
+```
+
+3. Update the `PROJECT_PATH` in `monitor_certificates.sh` to point to your project directory:
+```bash
+PROJECT_PATH="/path/to/your/project"
+```
+
+4. Configure the environment:
+```bash
+# Install required packages
+sudo apt update
+sudo apt install -y python3-pip ansible openssl
+
+# Install required Python packages
+pip3 install -r requirements.txt
+```
+
+5. Run the setup playbook:
+```bash
+ansible-playbook playbooks/setup_monitoring.yml
+```
+
+6. Verify the monitoring service is running:
+```bash
+systemctl status ansible-cert-monitor.timer
 ```
 
 ## Configuration
