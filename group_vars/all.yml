@@ -1,0 +1,35 @@
+---
+# Vault Configuration
+vault_url: "https://vault.example.com"
+vault_token: "{{ vault_token }}"
+vault_path: "secret/kubernetes/certificates"
+
+# Kubernetes Configuration
+k8s_context: "default"
+k8s_namespace: "default"
+k8s_cert_path: "/etc/kubernetes/pki"
+
+# Certificate Configuration
+cert_expiry_threshold_days: 5
+cert_types:
+  - name: "apiserver"
+    path: "apiserver.crt"
+  - name: "apiserver-kubelet-client"
+    path: "apiserver-kubelet-client.crt"
+  - name: "front-proxy-client"
+    path: "front-proxy-client.crt"
+  - name: "etcd-server"
+    path: "etcd/server.crt"
+  - name: "etcd-healthcheck-client"
+    path: "etcd/healthcheck-client.crt"
+
+# Notification Configuration
+slack_webhook_url: "{{ slack_webhook_url }}"
+notification_channel: "#certificate-alerts"
+team_notification_channel: "#certificate-rotation"
+
+# Splunk Configuration
+splunk_url: "https://splunk.example.com"
+splunk_username: "{{ splunk_username }}"
+splunk_password: "{{ splunk_password }}"
+splunk_search: "search index=certificates earliest=-1d | where expiry_days <= {{ cert_expiry_threshold_days }}" 

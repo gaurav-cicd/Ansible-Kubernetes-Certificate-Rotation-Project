@@ -1,0 +1,30 @@
+---
+- name: Monitor Kubernetes Certificates
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: slack_webhook_url
+      prompt: "Enter Slack webhook URL"
+      private: true
+
+  tasks:
+    - name: Query Splunk for expiring certificates
+      community.general.splunk_search:
+        url: "{{ splunk_url }}"
+        username: "{{ splunk_username }}"
+        password: "{{ splunk_password }}"
+        search: "{{ splunk_search }}"
+      register: splunk_results
+
+    - name: Process expiring certificates
+      set_fact:
+        expiring_certs: "{{ splunk_results.results | map(attribute='cert_name') | list }}"
+      when: splunk_results.results | length > 0
+
+    - name: Send notification for expiring certificates
+      include_tasks: ../roles/notification/tasks/slack.yml
+      vars:
+        message: "The following certificates will expire in {{ cert_expiry_threshold_days }} days: {{ expiring_certs | join(', ') }}"
+        channel: "{{ notification_channel }}"
+        color: "warning"
+      when: expiring_certs | length > 0 

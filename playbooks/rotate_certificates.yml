@@ -1,0 +1,82 @@
+---
+- name: Rotate Kubernetes Certificates
+  hosts: kubernetes_cluster
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault token"
+      private: true
+    - name: slack_webhook_url
+      prompt: "Enter Slack webhook URL"
+      private: true
+
+  tasks:
+    - name: Check certificate expiration
+      community.kubernetes.k8s_info:
+        kind: Secret
+        name: "{{ item.name }}-cert"
+        namespace: "{{ k8s_namespace }}"
+      register: cert_info
+      loop: "{{ cert_types }}"
+      when: item.name in certs_to_rotate
+
+    - name: Get certificate from Vault
+      community.vault.vault_read:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token }}"
+        path: "{{ vault_path }}/{{ item.name }}"
+      register: vault_cert
+      loop: "{{ cert_types }}"
+      when: item.name in certs_to_rotate
+
+    - name: Create new certificate secret
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ item.item.name }}-cert"
+            namespace: "{{ k8s_namespace }}"
+          data:
+            tls.crt: "{{ vault_cert.data.certificate | b64encode }}"
+            tls.key: "{{ vault_cert.data.private_key | b64encode }}"
+      loop: "{{ vault_cert.results }}"
+      when: item.item.name in certs_to_rotate
+
+    - name: Restart affected components
+      community.kubernetes.k8s_scale:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ item }}"
+        namespace: "{{ k8s_namespace }}"
+        replicas: 0
+      loop: "{{ affected_components }}"
+      when: item in affected_components
+
+    - name: Wait for pods to terminate
+      community.kubernetes.k8s_info:
+        kind: Pod
+        namespace: "{{ k8s_namespace }}"
+        label_selectors:
+          - app in affected_components
+      register: pod_info
+      until: pod_info.resources | length == 0
+      retries: 30
+      delay: 10
+
+    - name: Scale up components
+      community.kubernetes.k8s_scale:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ item }}"
+        namespace: "{{ k8s_namespace }}"
+        replicas: 1
+      loop: "{{ affected_components }}"
+      when: item in affected_components
+
+    - name: Send success notification
+      include_tasks: ../roles/notification/tasks/slack.yml
+      vars:
+        message: "Successfully rotated certificates for: {{ certs_to_rotate | join(', ') }}"
+        channel: "{{ team_notification_channel }}" 

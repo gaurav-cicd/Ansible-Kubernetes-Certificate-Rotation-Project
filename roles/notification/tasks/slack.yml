@@ -1,0 +1,10 @@
+---
+- name: Send Slack notification
+  community.general.slack:
+    url: "{{ slack_webhook_url }}"
+    channel: "{{ channel }}"
+    msg: "{{ message }}"
+    color: "{{ color | default('good') }}"
+    username: "Certificate Rotation Bot"
+    icon_emoji: ":rotating_light:"
+    link_names: 1 

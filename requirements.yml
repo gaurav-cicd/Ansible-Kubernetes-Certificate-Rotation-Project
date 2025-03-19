@@ -1,0 +1,14 @@
+---
+collections:
+  - name: community.kubernetes
+    version: ">=2.0.0"
+  - name: community.vault
+    version: ">=1.0.0"
+  - name: community.general
+    version: ">=4.0.0"
+
+roles:
+  - name: geerlingguy.vault
+    version: ">=1.0.0"
+  - name: geerlingguy.kubernetes
+    version: ">=1.0.0" 
