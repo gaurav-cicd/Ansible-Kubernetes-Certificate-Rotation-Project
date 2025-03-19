@@ -1,0 +1,12 @@
+---
+- name: Send email notification
+  community.general.mail:
+    to: "{{ email_recipients }}"
+    subject: "{{ subject | default('Certificate Rotation Notification') }}"
+    body: "{{ message }}"
+    from: "{{ email_from }}"
+    smtp_host: "{{ smtp_host }}"
+    smtp_port: "{{ smtp_port }}"
+    smtp_username: "{{ smtp_username }}"
+    smtp_password: "{{ smtp_password }}"
+    secure: "{{ smtp_secure | default('starttls') }}" 

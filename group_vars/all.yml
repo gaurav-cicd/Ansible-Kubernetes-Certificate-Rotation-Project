@@ -24,9 +24,19 @@ cert_types:
     path: "etcd/healthcheck-client.crt"
 
 # Notification Configuration
+notification_method: "both"  # Options: "slack", "email", or "both"
 slack_webhook_url: "{{ slack_webhook_url }}"
 notification_channel: "#certificate-alerts"
 team_notification_channel: "#certificate-rotation"
+
+# Email Configuration
+email_recipients: "{{ email_recipients }}"
+email_from: "cert-rotation@example.com"
+smtp_host: "smtp.example.com"
+smtp_port: 587
+smtp_username: "{{ smtp_username }}"
+smtp_password: "{{ smtp_password }}"
+smtp_secure: "starttls"
 
 # Splunk Configuration
 splunk_url: "https://splunk.example.com"

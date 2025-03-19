@@ -9,6 +9,15 @@
     - name: slack_webhook_url
       prompt: "Enter Slack webhook URL"
       private: true
+    - name: email_recipients
+      prompt: "Enter email recipients (comma-separated)"
+      private: false
+    - name: smtp_username
+      prompt: "Enter SMTP username"
+      private: true
+    - name: smtp_password
+      prompt: "Enter SMTP password"
+      private: true
 
   tasks:
     - name: Check certificate expiration
@@ -75,8 +84,16 @@
       loop: "{{ affected_components }}"
       when: item in affected_components
 
-    - name: Send success notification
+    - name: Send Slack success notification
       include_tasks: ../roles/notification/tasks/slack.yml
       vars:
         message: "Successfully rotated certificates for: {{ certs_to_rotate | join(', ') }}"
-        channel: "{{ team_notification_channel }}" 
+        channel: "{{ team_notification_channel }}"
+      when: notification_method in ["slack", "both"]
+
+    - name: Send email success notification
+      include_tasks: ../roles/notification/tasks/email.yml
+      vars:
+        message: "The following certificates have been successfully rotated:\n\n{{ certs_to_rotate | join('\n') }}"
+        subject: "Certificate Rotation Completed Successfully"
+      when: notification_method in ["email", "both"] 
