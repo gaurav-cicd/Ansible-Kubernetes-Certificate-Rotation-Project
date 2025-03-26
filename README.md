@@ -2,6 +2,12 @@
 
 This Ansible project automates the process of rotating Kubernetes certificates that are stored in Hashicorp Vault. The project includes monitoring, notification, and rotation capabilities.
 
+## Architecture Diagram
+
+The following diagram illustrates the system architecture and component interactions:
+
+![Kubernetes Certificate Rotation Architecture](docs/images/architecture.png)
+
 ## Prerequisites
 
 - Ansible 2.9 or higher
