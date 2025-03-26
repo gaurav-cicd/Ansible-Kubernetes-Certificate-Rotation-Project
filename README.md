@@ -85,7 +85,7 @@ The monitoring system should be deployed on a dedicated server with the followin
 
 2. Clone the repository to the monitoring server:
 ```bash
-git clone <repository-url>
+git clone https://github.com/gaurav-cicd/Ansible-Kubernetes-Certificate-Rotation-Project.git
 cd kubernetes-cert-rotation
 ```
 
